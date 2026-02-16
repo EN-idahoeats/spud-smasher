@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, userscalable=
+no">
+<title>Spud Smasher — Vandal Fuel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+background: #1D1D1D;
+overflow: hidden;
+font-family: 'Georgia', 'Times New Roman', serif;
+touch-action: none;
+-webkit-user-select: none;
+user-select: none;
+}
+canvas {
+display: block;
+margin: 0 auto;
+}
+/* SCREENS */
+.screen {
+position: fixed;
+top: 0; left: 0; right: 0; bottom: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+z-index: 10;
+transition: opacity 0.4s;
+}
+.screen.hidden {
+opacity: 0;
+pointer-events: none;
+}
+/* START SCREEN */
+#start-screen {
+background: linear-gradient(180deg, #1D1D1D 0%, #2A2A2A 100%);
+}
+.game-title {
+font-size: 52px;
+font-weight: 700;
+color: #fff;
+letter-spacing: 3px;
+text-align: center;
+line-height: 1.1;
+margin-bottom: 8px;
+}
+.game-title span {
+color: #F1B300;
+}
+.game-subtitle {
+font-family: Arial, Helvetica, sans-serif;
+font-size: 13px;
+letter-spacing: 3px;
+text-transform: uppercase;
+color: #A7A8AA;
+margin-bottom: 40px;
+}
+.potato-icon {
+font-size: 80px;
+margin-bottom: 30px;
+animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+0%, 100% { transform: translateY(0); }
+50% { transform: translateY(-15px); }
+}
+.start-btn {
+background: #F1B300;
+color: #1D1D1D;
+border: none;
+padding: 16px 48px;
+font-family: Arial, Helvetica, sans-serif;
+font-size: 16px;
+font-weight: 700;
+letter-spacing: 2px;
+text-transform: uppercase;
+border-radius: 8px;
+cursor: pointer;
+transition: transform 0.15s, box-shadow 0.15s;
+margin-bottom: 16px;
+}
+.start-btn:hover {
+transform: scale(1.05);
+box-shadow: 0 4px 20px rgba(241, 179, 0, 0.4);
+}
+.start-btn:active {
+transform: scale(0.97);
+}
+.instructions {
+font-family: Arial, sans-serif;
+font-size: 13px;
+color: #A7A8AA;
+text-align: center;
+line-height: 1.6;
+max-width: 280px;
+margin-top: 12px;
+}
+.instructions strong {
+color: #F1B300;
+}
+/* HUD */
+#hud {
+position: fixed;
+top: 0; left: 0; right: 0;
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 20px;
+z-index: 5;
+background: linear-gradient(180deg, rgba(29,29,29,0.9) 0%, rgba(29,29,29,0)
+100%);
+pointer-events: none;
+}
+#hud.hidden { display: none; }
+.hud-item {
+font-family: Arial, Helvetica, sans-serif;
+font-size: 14px;
+font-weight: 700;
+color: #fff;
+letter-spacing: 1px;
+}
+.hud-item span {
+color: #F1B300;
+}
+.lives-display {
+font-size: 22px;
+letter-spacing: 2px;
+}
+/* END SCREEN */
+#end-screen {
+background: linear-gradient(180deg, #1D1D1D 0%, #2A2A2A 100%);
+}
+.end-label {
+font-family: Arial, Helvetica, sans-serif;
+font-size: 11px;
+letter-spacing: 3px;
+text-transform: uppercase;
+color: #A7A8AA;
+margin-bottom: 8px;
+}
+.end-score {
+font-size: 72px;
+font-weight: 700;
+color: #F1B300;
+line-height: 1;
+margin-bottom: 8px;
+}
+.end-high-score {
+font-family: Arial, sans-serif;
+font-size: 14px;
+color: #A7A8AA;
+margin-bottom: 30px;
+}
+.end-high-score strong {
+color: #F1B300;
+}
+.new-record {
+font-family: Arial, sans-serif;
+font-size: 13px;
+color: #F1B300;
+font-weight: 700;
+letter-spacing: 2px;
+text-transform: uppercase;
+margin-bottom: 20px;
+animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.5; }
+}
+.end-message {
+font-family: Arial, sans-serif;
+font-size: 14px;
+color: #A7A8AA;
+text-align: center;
+max-width: 280px;
+line-height: 1.5;
+margin-bottom: 24px;
+}
+.vandal-fuel-badge {
+font-family: Georgia, serif;
+font-size: 14px;
+color: #fff;
+letter-spacing: 2px;
+margin-top: 30px;
+}
+.vandal-fuel-badge span { color: #F1B300; }
+.cta-link {
+display: inline-block;
+margin-top: 12px;
+font-family: Arial, sans-serif;
+font-size: 12px;
+color: #F1B300;
+text-decoration: underline;
+letter-spacing: 1px;
+}
+/* Slash trail */
+.slash-trail {
+position: fixed;
+pointer-events: none;
+z-index: 4;
+}
+/* Combo popup */
+.combo-popup {
+position: fixed;
+font-family: Arial, sans-serif;
+font-weight: 700;
+font-size: 28px;
+color: #F1B300;
+text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+pointer-events: none;
+z-index: 6;
+animation: comboFade 0.8s ease-out forwards;
+}
+@keyframes comboFade {
+0% { transform: translateY(0) scale(1); opacity: 1; }
+100% { transform: translateY(-60px) scale(1.3); opacity: 0; }
+}
+</style>
+</head>
+<body>
+<!-- START SCREEN -->
+<div id="start-screen" class="screen">
+<div class="potato-icon"> </div>
+<div class="game-title">SPUD<span>SMASHER</span></div>
+<div class="game-subtitle">Vandal Fuel Edition</div>
+<button class="start-btn" id="start-btn">SMASH!</button>
+<div class="instructions">
+<strong>Swipe</strong> or <strong>click</strong> to slice the spuds!<br>
+Avoid the rotten ones <br>
+Miss 3 potatoes and it's game over.
+</div>
+</div>
+<!-- HUD -->
+<div id="hud" class="hidden">
+<div class="hud-item">SCORE: <span id="score-display">0</span></div>
+<div class="hud-item lives-display" id="lives-display"> </div>
+</div>
+<!-- GAME CANVAS -->
+<canvas id="game-canvas"></canvas>
+<!-- END SCREEN -->
+<div id="end-screen" class="screen hidden">
+<div class="potato-icon" style="animation-duration:3s;"> </div>
+<div class="end-label">Your Score</div>
+<div class="end-score" id="final-score">0</div>
+<div class="new-record hidden" id="new-record"> NEW HIGH SCORE! </div>
+<div class="end-high-score">Best: <strong id="high-score-display">0</strong>
+</div>
+<div class="end-message" id="end-message">Not bad, Vandal! Come back next week
+and try to beat your score.</div>
+<button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+<div class="vandal-fuel-badge">VANDAL<span>FUEL</span></div>
+<a href="#" class="cta-link" id="dining-link">Check out this week's dining
+events →</a>
+</div>
+<!-- SLASH TRAIL SVG -->
+<svg class="slash-trail" id="slash-svg" width="100%" height="100%">
+<defs>
+<filter id="glow">
+<feGaussianBlur stdDeviation="3" result="blur"/>
+<feMerge>
+<feMergeNode in="blur"/>
+<feMergeNode in="SourceGraphic"/>
+</feMerge>
+</filter>
+</defs>
+</svg>
+<script>
+(function() {
+// ===== CONSTANTS =====
+const GAME_DURATION = 60; // seconds
+const MAX_LIVES = 3;
+const LAUNCH_INTERVAL_START = 1200; // ms
+const LAUNCH_INTERVAL_MIN = 500;
+const ROTTEN_CHANCE_START = 0.12;
+const ROTTEN_CHANCE_MAX = 0.25;
+const COMBO_WINDOW = 600; // ms
+const POTATO_SIZE = 55;
+const GRAVITY = 0.18;
+// Potato types
+const POTATO_TYPES = [
+{ emoji: ' ', points: 1, label: 'Russet' },
+{ emoji: ' ', points: 2, label: 'Sweet Potato' },
+{ emoji: ' ', points: 1, label: 'Yukon Gold' },
+];
+const ROTTEN_POTATO = { emoji: ' ', points: -5, label: 'Rotten!' };
+// Score messages
+const SCORE_MESSAGES = [
+{ min: 0, msg: "Keep practicing, Vandal! Those spuds aren't going to smash
+themselves." },
+{ min: 15, msg: "Not bad! You're getting the hang of it. Come back next week!"
+},
+{ min: 30, msg: "Solid smashing, Vandal! You've got skills." },
+{ min: 50, msg: "Impressive! You're a certified Spud Smasher!" },
+{ min: 75, msg: "LEGENDARY! You are the Spud Smasher champion! " },
+];
+// ===== STATE =====
+let canvas, ctx;
+let W, H;
+let score = 0;
+let lives = MAX_LIVES;
+let gameRunning = false;
+let gameTime = 0;
+let lastLaunch = 0;
+let potatoes = [];
+let sliceParticles = [];
+let slashPoints = [];
+let comboCount = 0;
+let lastSliceTime = 0;
+let isPointerDown = false;
+let animFrameId;
+let highScore = parseInt(localStorage.getItem('spudSmasherHighScore') || '0');
+// ===== ELEMENTS =====
+const startScreen = document.getElementById('start-screen');
+const endScreen = document.getElementById('end-screen');
+const hud = document.getElementById('hud');
+const scoreDisplay = document.getElementById('score-display');
+const livesDisplay = document.getElementById('lives-display');
+const finalScoreEl = document.getElementById('final-score');
+const highScoreEl = document.getElementById('high-score-display');
+const newRecordEl = document.getElementById('new-record');
+const endMessageEl = document.getElementById('end-message');
+const startBtn = document.getElementById('start-btn');
+const restartBtn = document.getElementById('restart-btn');
+const slashSvg = document.getElementById('slash-svg');
+// ===== CANVAS SETUP =====
+canvas = document.getElementById('game-canvas');
+ctx = canvas.getContext('2d');
+function resize() {
+W = window.innerWidth;
+H = window.innerHeight;
+canvas.width = W;
+canvas.height = H;
+}
+window.addEventListener('resize', resize);
+resize();
+// ===== POTATO CLASS =====
+class Potato {
+constructor(type, isRotten) {
+this.type = isRotten ? ROTTEN_POTATO : type;
+this.isRotten = isRotten;
+this.size = POTATO_SIZE + Math.random() * 15;
+this.x = Math.random() * (W - 100) + 50;
+this.y = H + this.size;
+// Launch velocity
+const speed = 7 + Math.random() * 4;
+const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.8;
+this.vx = Math.cos(angle) * speed * 0.7;
+this.vy = -speed - Math.random() * 3;
+this.rotation = Math.random() * Math.PI * 2;
+this.rotSpeed = (Math.random() - 0.5) * 0.08;
+this.sliced = false;
+this.missed = false;
+this.alpha = 1;
+// Slice halves
+this.halfL = null;
+this.halfR = null;
+}
+update() {
+if (this.sliced) {
+// Animate halves
+if (this.halfL) {
+this.halfL.x += this.halfL.vx;
+this.halfL.y += this.halfL.vy;
+this.halfL.vy += GRAVITY * 1.5;
+this.halfL.rotation += this.halfL.rotSpeed;
+this.alpha -= 0.02;
+}
+return this.alpha > 0;
+}
+this.vy += GRAVITY;
+this.x += this.vx;
+this.y += this.vy;
+this.rotation += this.rotSpeed;
+// Missed - fell below screen
+if (this.y > H + this.size * 2 && !this.sliced && !this.isRotten) {
+this.missed = true;
+return false;
+}
+// Remove if way off screen
+if (this.y > H + 200) return false;
+return true;
+}
+draw(ctx) {
+if (this.sliced && this.halfL) {
+// Draw two halves
+ctx.save();
+ctx.globalAlpha = Math.max(0, this.alpha);
+// Left half
+ctx.save();
+ctx.translate(this.halfL.x, this.halfL.y);
+ctx.rotate(this.halfL.rotation);
+ctx.beginPath();
+ctx.rect(-this.size / 2, -this.size / 2, this.size / 2, this.size);
+ctx.clip();
+ctx.font = `${this.size}px serif`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(this.type.emoji, 0, 0);
+ctx.restore();
+// Right half
+ctx.save();
+ctx.translate(this.halfR.x, this.halfR.y);
+ctx.rotate(this.halfR.rotation);
+ctx.beginPath();
+ctx.rect(0, -this.size / 2, this.size / 2, this.size);
+ctx.clip();
+ctx.font = `${this.size}px serif`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(this.type.emoji, 0, 0);
+ctx.restore();
+ctx.restore();
+return;
+}
+ctx.save();
+ctx.translate(this.x, this.y);
+ctx.rotate(this.rotation);
+ctx.font = `${this.size}px serif`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+// Rotten glow
+if (this.isRotten) {
+ctx.shadowColor = '#ff0000';
+ctx.shadowBlur = 15;
+}
+ctx.fillText(this.type.emoji, 0, 0);
+ctx.restore();
+}
+slice(px, py) {
+if (this.sliced) return false;
+const dx = px - this.x;
+const dy = py - this.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < this.size * 0.7) {
+this.sliced = true;
+// Create two halves
+this.halfL = {
+x: this.x - 10, y: this.y,
+vx: this.vx - 2 - Math.random() * 2, vy: this.vy - 1,
+rotation: this.rotation, rotSpeed: -0.1 - Math.random() * 0.1
+};
+this.halfR = {
+x: this.x + 10, y: this.y,
+vx: this.vx + 2 + Math.random() * 2, vy: this.vy - 1,
+rotation: this.rotation, rotSpeed: 0.1 + Math.random() * 0.1
+};
+return true;
+}
+return false;
+}
+}
+// ===== PARTICLE CLASS =====
+class Particle {
+constructor(x, y, color) {
+this.x = x;
+this.y = y;
+this.color = color;
+this.size = 3 + Math.random() * 4;
+const angle = Math.random() * Math.PI * 2;
+const speed = 2 + Math.random() * 5;
+this.vx = Math.cos(angle) * speed;
+this.vy = Math.sin(angle) * speed;
+this.life = 1;
+this.decay = 0.02 + Math.random() * 0.03;
+}
+update() {
+this.x += this.vx;
+this.y += this.vy;
+this.vy += 0.1;
+this.life -= this.decay;
+return this.life > 0;
+}
+draw(ctx) {
+ctx.save();
+ctx.globalAlpha = this.life;
+ctx.fillStyle = this.color;
+ctx.beginPath();
+ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+ctx.fill();
+ctx.restore();
+}
+}
+// ===== SLASH TRAIL =====
+function updateSlashTrail() {
+// Remove old points
+const now = performance.now();
+slashPoints = slashPoints.filter(p => now - p.time < 150);
+// Clear SVG
+const existing = slashSvg.querySelectorAll('polyline');
+existing.forEach(el => el.remove());
+if (slashPoints.length < 2) return;
+let points = slashPoints.map(p => `${p.x},${p.y}`).join(' ');
+const line = document.createElementNS('http://www.w3.org/2000/svg',
+'polyline');
+line.setAttribute('points', points);
+line.setAttribute('fill', 'none');
+line.setAttribute('stroke', '#F1B300');
+line.setAttribute('stroke-width', '4');
+line.setAttribute('stroke-linecap', 'round');
+line.setAttribute('stroke-linejoin', 'round');
+line.setAttribute('filter', 'url(#glow)');
+line.setAttribute('opacity', '0.8');
+slashSvg.appendChild(line);
+}
+// ===== COMBO POPUP =====
+function showCombo(x, y, count) {
+const el = document.createElement('div');
+el.className = 'combo-popup';
+el.style.left = x + 'px';
+el.style.top = y + 'px';
+if (count >= 3) {
+el.textContent = `${count}x COMBO! +${count * 2}`;
+} else {
+el.textContent = `+${count}`;
+}
+document.body.appendChild(el);
+setTimeout(() => el.remove(), 800);
+}
+// ===== GAME LOGIC =====
+function launchPotato() {
+const progress = gameTime / GAME_DURATION;
+const rottenChance = ROTTEN_CHANCE_START + (ROTTEN_CHANCE_MAX -
+ROTTEN_CHANCE_START) * progress;
+const isRotten = Math.random() < rottenChance;
+const type = POTATO_TYPES[Math.floor(Math.random() * POTATO_TYPES.length)];
+potatoes.push(new Potato(type, isRotten));
+// Sometimes launch multiples later in the game
+if (progress > 0.3 && Math.random() < 0.3) {
+setTimeout(() => {
+const isRotten2 = Math.random() < rottenChance;
+const type2 = POTATO_TYPES[Math.floor(Math.random() *
+POTATO_TYPES.length)];
+potatoes.push(new Potato(type2, isRotten2));
+}, 100 + Math.random() * 200);
+}
+if (progress > 0.6 && Math.random() < 0.2) {
+setTimeout(() => {
+const type3 = POTATO_TYPES[Math.floor(Math.random() *
+POTATO_TYPES.length)];
+potatoes.push(new Potato(type3, false));
+}, 200 + Math.random() * 200);
+}
+}
+function checkSlice(px, py) {
+if (!gameRunning) return;
+const now = performance.now();
+for (let i = potatoes.length - 1; i >= 0; i--) {
+const p = potatoes[i];
+if (p.sliced) continue;
+if (p.slice(px, py)) {
+if (p.isRotten) {
+// Hit rotten potato — lose a life
+lives--;
+updateLives();
+// Red particles
+for (let j = 0; j < 12; j++) {
+sliceParticles.push(new Particle(p.x, p.y, '#ff4444'));
+}
+showCombo(px, py - 30, -1);
+comboCount = 0;
+if (lives <= 0) {
+endGame();
+}
+} else {
+// Good slice
+if (now - lastSliceTime < COMBO_WINDOW) {
+comboCount++;
+} else {
+comboCount = 1;
+}
+lastSliceTime = now;
+let points = p.type.points;
+if (comboCount >= 3) {
+points = comboCount * 2;
+}
+score += points;
+updateScore();
+showCombo(px, py - 30, comboCount >= 3 ? comboCount : points);
+// Gold particles
+const colors = ['#F1B300', '#FFD54F', '#FFF176', '#A7A8AA'];
+for (let j = 0; j < 10; j++) {
+sliceParticles.push(new Particle(p.x, p.y,
+colors[Math.floor(Math.random() * colors.length)]));
+}
+}
+break; // Only slice one per check
+}
+}
+}
+function updateScore() {
+scoreDisplay.textContent = score;
+}
+function updateLives() {
+const full = ' ';
+const empty = ' ';
+livesDisplay.textContent = full.repeat(lives) + empty.repeat(MAX_LIVES -
+lives);
+}
+// ===== GAME LOOP =====
+let lastTime = 0;
+let startTime = 0;
+function gameLoop(timestamp) {
+if (!gameRunning) return;
+const dt = timestamp - lastTime;
+lastTime = timestamp;
+gameTime = (timestamp - startTime) / 1000;
+// Check game over by time
+if (gameTime >= GAME_DURATION) {
+endGame();
+return;
+}
+// Launch potatoes
+const progress = gameTime / GAME_DURATION;
+const interval = LAUNCH_INTERVAL_START - (LAUNCH_INTERVAL_START -
+LAUNCH_INTERVAL_MIN) * progress;
+if (timestamp - lastLaunch > interval) {
+launchPotato();
+lastLaunch = timestamp;
+}
+// Update
+potatoes = potatoes.filter(p => {
+const alive = p.update();
+if (!alive && p.missed) {
+lives--;
+updateLives();
+if (lives <= 0) {
+endGame();
+}
+}
+return alive;
+});
+sliceParticles = sliceParticles.filter(p => p.update());
+// Draw
+ctx.clearRect(0, 0, W, H);
+// Background gradient
+const grad = ctx.createLinearGradient(0, 0, 0, H);
+grad.addColorStop(0, '#1D1D1D');
+grad.addColorStop(1, '#2A2A2A');
+ctx.fillStyle = grad;
+ctx.fillRect(0, 0, W, H);
+// Draw subtle grid pattern
+ctx.strokeStyle = 'rgba(241, 179, 0, 0.03)';
+ctx.lineWidth = 1;
+for (let x = 0; x < W; x += 40) {
+ctx.beginPath();
+ctx.moveTo(x, 0);
+ctx.lineTo(x, H);
+ctx.stroke();
+}
+for (let y = 0; y < H; y += 40) {
+ctx.beginPath();
+ctx.moveTo(0, y);
+ctx.lineTo(W, y);
+ctx.stroke();
+}
+// Time bar
+const timeLeft = Math.max(0, 1 - gameTime / GAME_DURATION);
+ctx.fillStyle = 'rgba(241, 179, 0, 0.15)';
+ctx.fillRect(0, H - 4, W, 4);
+ctx.fillStyle = '#F1B300';
+ctx.fillRect(0, H - 4, W * timeLeft, 4);
+// Draw potatoes
+potatoes.forEach(p => p.draw(ctx));
+// Draw particles
+sliceParticles.forEach(p => p.draw(ctx));
+// Update slash trail
+updateSlashTrail();
+animFrameId = requestAnimationFrame(gameLoop);
+}
+// ===== START / END =====
+function startGame() {
+score = 0;
+lives = MAX_LIVES;
+gameTime = 0;
+potatoes = [];
+sliceParticles = [];
+slashPoints = [];
+comboCount = 0;
+lastSliceTime = 0;
+gameRunning = true;
+updateScore();
+updateLives();
+startScreen.classList.add('hidden');
+endScreen.classList.add('hidden');
+hud.classList.remove('hidden');
+lastTime = performance.now();
+startTime = lastTime;
+lastLaunch = lastTime;
+animFrameId = requestAnimationFrame(gameLoop);
+}
+function endGame() {
+gameRunning = false;
+cancelAnimationFrame(animFrameId);
+hud.classList.add('hidden');
+// High score
+const isNewRecord = score > highScore;
+if (isNewRecord) {
+highScore = score;
+localStorage.setItem('spudSmasherHighScore', highScore.toString());
+}
+// Update end screen
+finalScoreEl.textContent = score;
+highScoreEl.textContent = highScore;
+if (isNewRecord && score > 0) {
+newRecordEl.classList.remove('hidden');
+} else {
+newRecordEl.classList.add('hidden');
+}
+// Pick message
+let msg = SCORE_MESSAGES[0].msg;
+for (const m of SCORE_MESSAGES) {
+if (score >= m.min) msg = m.msg;
+}
+endMessageEl.textContent = msg;
+// Show end screen
+setTimeout(() => {
+endScreen.classList.remove('hidden');
+}, 500);
+}
+// ===== INPUT HANDLING =====
+function getPos(e) {
+if (e.touches) {
+return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}
+return { x: e.clientX, y: e.clientY };
+}
+function onPointerDown(e) {
+e.preventDefault();
+isPointerDown = true;
+const pos = getPos(e);
+slashPoints = [{ x: pos.x, y: pos.y, time: performance.now() }];
+checkSlice(pos.x, pos.y);
+}
+function onPointerMove(e) {
+e.preventDefault();
+if (!isPointerDown) return;
+const pos = getPos(e);
+slashPoints.push({ x: pos.x, y: pos.y, time: performance.now() });
+checkSlice(pos.x, pos.y);
+}
+function onPointerUp(e) {
+e.preventDefault();
+isPointerDown = false;
+setTimeout(() => { slashPoints = []; updateSlashTrail(); }, 200);
+}
+canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('mousemove', onPointerMove);
+canvas.addEventListener('mouseup', onPointerUp);
+canvas.addEventListener('mouseleave', onPointerUp);
+canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+canvas.addEventListener('touchend', onPointerUp, { passive: false });
+// Buttons
+startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('touchend', (e) => { e.preventDefault(); startGame();
+});
+restartBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('touchend', (e) => { e.preventDefault();
+startGame(); });
+// Prevent scrolling
+document.body.addEventListener('touchmove', (e) => e.preventDefault(), {
+passive: false });
+// Show initial high score
+highScoreEl.textContent = highScore;
+})();
+</script>
+</body>
+</html>

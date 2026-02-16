@@ -11,7 +11,7 @@ width: 100%;
 height: 100%;
 overflow: hidden;
 background: #1D1D1D;
-font-family: 'Georgia', 'Times New Roman', serif;
+font-family: ‘Georgia’, ‘Times New Roman’, serif;
 -webkit-user-select: none;
 user-select: none;
 -webkit-touch-callout: none;
@@ -254,6 +254,10 @@ animation: comboFade 0.7s ease-out forwards;
 <body>
 <!-- START SCREEN -->
 <div id="start-screen" class="screen">
+<div style="margin-bottom:24px; text-align:center;">
+<p style="font-family:Arial,sans-serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#A7A8AA; margin-bottom:8px;">Made by</p>
+<img src="./IdahoEatsLogoWhite.png" alt="Idaho Eats" style="width:180px; height:auto;">
+</div>
 <div class="potato-icon">🥔</div>
 <div class="game-title">SPUD<span>SMASHER</span></div>
 <div class="game-subtitle">Vandal Fuel Edition</div>
@@ -284,7 +288,7 @@ Miss 3 potatoes = game over
 <div class="end-message" id="end-message"></div>
 <button class="start-btn" id="restart-btn" type="button">PLAY AGAIN</button>
 <div class="vandal-fuel-badge">VANDAL<span>FUEL</span></div>
-<a href="#" class="cta-link">Check out this week's dining events →</a>
+<a href="https://new.dineoncampus.com/uidaho/events" class="cta-link" target="_blank">Check out this week's dining events →</a>
 </div>
 <!-- SLASH TRAIL -->
 <svg id="slash-svg" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:40;">

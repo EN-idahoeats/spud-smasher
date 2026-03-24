@@ -128,11 +128,7 @@ display: block;
 z-index: 10;
 }
 
-canvas {
-display: block;
-width: 100%;
-height: 100%;
-}
+canvas { display: block; width: 100%; height: 100%; }
 
 #hud {
 position: fixed;
@@ -160,16 +156,56 @@ letter-spacing: 1px;
 .hud-score { font-size: 18px; }
 .hud-lives { font-size: 24px; letter-spacing: 4px; }
 
-.hud-time {
+.hud-time { text-align: center; font-size: 14px; color: #A7A8AA; }
+.hud-time span { display: block; font-size: 22px; color: #F1B300; }
+
+/* Streak counter */
+#streak-bar {
+position: fixed;
+bottom: 12px; left: 50%;
+transform: translateX(-50%);
+z-index: 51;
+pointer-events: none;
 text-align: center;
-font-size: 14px;
-color: #A7A8AA;
+display: none;
 }
 
-.hud-time span {
-display: block;
-font-size: 22px;
+#streak-bar.active { display: block; }
+
+.streak-label {
+font-family: Arial, sans-serif;
+font-size: 13px;
+font-weight: 700;
 color: #F1B300;
+letter-spacing: 2px;
+text-transform: uppercase;
+text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+.streak-count {
+font-family: Georgia, serif;
+font-size: 28px;
+font-weight: 700;
+color: #fff;
+text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+/* Frenzy overlay */
+.frenzy-flash {
+position: fixed;
+top: 0; left: 0; right: 0; bottom: 0;
+pointer-events: none;
+z-index: 45;
+border: 3px solid #F1B300;
+animation: frenzyPulse 0.5s ease-in-out infinite;
+display: none;
+}
+
+.frenzy-flash.active { display: block; }
+
+@keyframes frenzyPulse {
+0%, 100% { border-color: rgba(241,179,0,0.3); }
+50% { border-color: rgba(241,179,0,0.7); }
 }
 
 #end-screen {
@@ -191,6 +227,13 @@ font-size: 64px;
 font-weight: 700;
 color: #F1B300;
 line-height: 1;
+margin-bottom: 4px;
+}
+
+.end-stats {
+font-family: Arial, sans-serif;
+font-size: 13px;
+color: #666;
 margin-bottom: 8px;
 }
 
@@ -245,10 +288,7 @@ color: #A7A8AA;
 margin-bottom: 8px;
 }
 
-.made-by img {
-width: 160px;
-height: auto;
-}
+.made-by img { width: 160px; height: auto; }
 
 .combo-popup {
 position: fixed;
@@ -267,7 +307,6 @@ animation: comboFade 0.7s ease-out forwards;
 100% { transform: translateY(-50px) scale(1.2); opacity: 0; }
 }
 
-/* Smash ring effect */
 .smash-ring {
 position: fixed;
 pointer-events: none;
@@ -279,14 +318,11 @@ animation: smashExpand 0.4s ease-out forwards;
 
 @keyframes smashExpand {
 0% { width: 10px; height: 10px; opacity: 1; transform: translate(-50%, -50%) scale(1); }
-100% { width: 120px; height: 120px; opacity: 0; transform: translate(-50%, -50%) scale(1); }
+100% { width: 140px; height: 140px; opacity: 0; transform: translate(-50%, -50%) scale(1); }
 }
 
-.smash-ring.bomb {
-border-color: #ff4444;
-}
+.smash-ring.bomb { border-color: #ff4444; }
 
-/* Smash text */
 .smash-text {
 position: fixed;
 pointer-events: none;
@@ -326,7 +362,6 @@ animation: smashTextPop 0.5s ease-out forwards;
 .end-score { font-size: 48px; }
 }
 
-/* TV / large screen optimizations */
 @media (min-width: 1200px) {
 .game-title { font-size: 52px; }
 .potato-icon { font-size: 80px; }
@@ -342,6 +377,8 @@ animation: smashTextPop 0.5s ease-out forwards;
 .made-by p { font-size: 13px; }
 .combo-popup { font-size: 36px; }
 .smash-text { font-size: 48px; }
+.streak-label { font-size: 16px; }
+.streak-count { font-size: 36px; }
 }
 </style>
 
@@ -362,7 +399,8 @@ animation: smashTextPop 0.5s ease-out forwards;
   <div class="instructions">
     <strong>Swipe</strong> or <strong>drag</strong> to smash the spuds!<br>
     Avoid the bombs 💣<br>
-    Miss 3 potatoes = game over
+    Miss 3 potatoes = game over<br>
+    <strong>Build combos for bonus points!</strong>
   </div>
 </div>
 
@@ -380,12 +418,24 @@ animation: smashTextPop 0.5s ease-out forwards;
   <div class="hud-item hud-lives" id="lives-display">🥔🥔🥔</div>
 </div>
 
+<!-- STREAK BAR -->
+
+<div id="streak-bar">
+  <div class="streak-label" id="streak-label">STREAK</div>
+  <div class="streak-count" id="streak-count">0</div>
+</div>
+
+<!-- FRENZY BORDER -->
+
+<div class="frenzy-flash" id="frenzy-flash"></div>
+
 <!-- END SCREEN -->
 
 <div id="end-screen" class="screen hidden">
   <div class="potato-icon" style="animation-duration:3s;">🥔</div>
   <div class="end-label">Your Score</div>
   <div class="end-score" id="final-score">0</div>
+  <div class="end-stats" id="end-stats"></div>
   <div class="new-record hidden" id="new-record">⭐ NEW HIGH SCORE ⭐</div>
   <div class="end-high-score">Best: <strong id="high-score-display">0</strong></div>
   <div class="end-message" id="end-message"></div>
@@ -400,31 +450,55 @@ animation: smashTextPop 0.5s ease-out forwards;
 (function() {
   'use strict';
 
+  // ===== CONFIG =====
   var GAME_DURATION = 60;
   var MAX_LIVES = 3;
-  var LAUNCH_MIN = 500;
-  var LAUNCH_MAX = 1200;
-  var BOMB_START = 0.1;
-  var BOMB_END = 0.25;
-  var GRAVITY = 0.17;
-  var COMBO_WINDOW = 500;
+  var GRAVITY = 0.15;
+  var COMBO_WINDOW = 600;
+
+  // Difficulty ramps over time (0-1 progress)
+  function getLaunchInterval(prog) {
+    // Starts at 1100ms, drops to 300ms
+    return Math.max(300, 1100 - prog * 800);
+  }
+  function getBombChance(prog) {
+    // 8% -> 30%
+    return 0.08 + prog * 0.22;
+  }
+  function getMultiLaunchChance(prog) {
+    // 10% -> 60%
+    return 0.1 + prog * 0.5;
+  }
+  function getTripleLaunchChance(prog) {
+    // 0% -> 35%
+    return Math.max(0, (prog - 0.3) * 0.5);
+  }
+  function getSpeedMultiplier(prog) {
+    // 1.0 -> 1.6
+    return 1.0 + prog * 0.6;
+  }
 
   var TYPES = [
     { emoji: '🥔', pts: 1 },
-    { emoji: '🍠', pts: 2 }
+    { emoji: '🍠', pts: 2 },
+    { emoji: '🥔', pts: 1 }
   ];
+  // Golden potato — rare, worth 5 pts
+  var GOLDEN = { emoji: '🌟', pts: 5 };
   var BOMB = { emoji: '💣', pts: 0 };
 
-  var SMASH_WORDS = ['SMASH!', 'BOOM!', 'MASHED!', 'SPLAT!', 'POW!', 'WHAM!'];
+  var SMASH_WORDS = ['SMASH!', 'BOOM!', 'MASHED!', 'SPLAT!', 'POW!', 'WHAM!', 'CRUSHED!'];
 
   var MSGS = [
     { s: 0, m: "Keep practicing, Vandal! Those spuds won't smash themselves." },
-    { s: 15, m: "Not bad! You're getting the hang of it." },
-    { s: 30, m: "Solid smashing! You've got skills, Vandal." },
-    { s: 50, m: "Impressive! Certified Spud Smasher!" },
-    { s: 75, m: "LEGENDARY! You are the Spud Smasher champion!" }
+    { s: 20, m: "Not bad! You're getting warmed up." },
+    { s: 40, m: "Solid smashing! You've got some serious skills." },
+    { s: 60, m: "Impressive! You're a certified Spud Smasher!" },
+    { s: 80, m: "Elite! Your smashing game is top tier!" },
+    { s: 100, m: "LEGENDARY! You are the ultimate Spud Smasher champion!" }
   ];
 
+  // ===== ELEMENTS =====
   var startScreen = document.getElementById('start-screen');
   var endScreen = document.getElementById('end-screen');
   var gameContainer = document.getElementById('game-container');
@@ -436,17 +510,25 @@ animation: smashTextPop 0.5s ease-out forwards;
   var highEl = document.getElementById('high-score-display');
   var newRecEl = document.getElementById('new-record');
   var msgEl = document.getElementById('end-message');
+  var endStatsEl = document.getElementById('end-stats');
+  var streakBar = document.getElementById('streak-bar');
+  var streakLabel = document.getElementById('streak-label');
+  var streakCount = document.getElementById('streak-count');
+  var frenzyFlash = document.getElementById('frenzy-flash');
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
 
+  // ===== STATE =====
   var W, H, dpr;
   var score, lives, gameTime, running, lastFrame, startTime;
-  var potatoes, particles;
-  var lastLaunch, comboCount, lastSmash, pointerDown, pointerTrail;
+  var potatoes, particles, pointerTrail;
+  var lastLaunch, comboCount, lastSmash, pointerDown;
+  var totalSmashed, bestStreak, currentStreak;
+  var inFrenzy, frenzyTimer;
   var highScore = 0;
   var raf;
 
-  try { highScore = parseInt(localStorage.getItem('spudHS2') || '0'); } catch(e) {}
+  try { highScore = parseInt(localStorage.getItem('spudHS3') || '0'); } catch(e) {}
   highEl.textContent = highScore;
 
   function resize() {
@@ -463,39 +545,84 @@ animation: smashTextPop 0.5s ease-out forwards;
   resize();
 
   function spudSize() {
-    var base = Math.min(W, H) * 0.09;
-    return Math.max(44, Math.min(base, 80));
+    var base = Math.min(W, H) * 0.085;
+    return Math.max(42, Math.min(base, 75));
   }
 
-  // POTATO
-  function Potato(type, isBomb) {
-    var sz = spudSize() + Math.random() * 10;
-    this.type = isBomb ? BOMB : type;
-    this.isBomb = isBomb;
+  // ===== POTATO =====
+  function Potato(type, isBomb, isGolden, speedMult) {
+    var sz = spudSize() + Math.random() * 12;
+    if (isGolden) {
+      this.type = GOLDEN;
+      this.isBomb = false;
+      this.isGolden = true;
+    } else if (isBomb) {
+      this.type = BOMB;
+      this.isBomb = true;
+      this.isGolden = false;
+    } else {
+      this.type = type;
+      this.isBomb = false;
+      this.isGolden = false;
+    }
     this.sz = sz;
-    this.x = Math.random() * (W - sz * 2) + sz;
-    this.y = H + sz;
-    var spd = 6 + Math.random() * 3;
-    var ang = -Math.PI / 2 + (Math.random() - 0.5) * 0.7;
-    this.vx = Math.cos(ang) * spd * 0.6;
-    this.vy = -spd - Math.random() * 2.5;
+
+    // Launch zones: mostly bottom with varied heights
+    // Height distribution: 60% middle, 20% low, 15% high, 5% sides
+    var launchZone = Math.random();
+    if (launchZone < 0.05) {
+      // From left side (rare)
+      this.x = -sz;
+      this.y = H * (0.35 + Math.random() * 0.3);
+      var spd = (5 + Math.random() * 3) * speedMult;
+      this.vx = spd * 0.8;
+      this.vy = -(spd * 0.3 + Math.random() * 2);
+    } else if (launchZone < 0.10) {
+      // From right side (rare)
+      this.x = W + sz;
+      this.y = H * (0.35 + Math.random() * 0.3);
+      var spd2 = (5 + Math.random() * 3) * speedMult;
+      this.vx = -(spd2 * 0.8);
+      this.vy = -(spd2 * 0.3 + Math.random() * 2);
+    } else {
+      // From bottom — varied peak heights
+      this.x = Math.random() * (W - sz * 2) + sz;
+      this.y = H + sz;
+      var ang3 = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+      this.vx = Math.cos(ang3) * 3 * speedMult;
+
+      var heightRoll = Math.random();
+      if (heightRoll < 0.20) {
+        // Low launch — peaks in bottom third (easy targets)
+        this.vy = -(5 + Math.random() * 2) * speedMult;
+      } else if (heightRoll < 0.80) {
+        // Middle launch — peaks around center of screen (sweet spot)
+        this.vy = -(7 + Math.random() * 2.5) * speedMult;
+      } else if (heightRoll < 0.95) {
+        // High launch — peaks in upper third (challenging)
+        this.vy = -(9 + Math.random() * 2) * speedMult;
+      } else {
+        // Very high — near top of screen (rare, difficulty spice)
+        this.vy = -(10.5 + Math.random() * 2) * speedMult;
+      }
+    }
+
     this.rot = Math.random() * 6.28;
-    this.rs = (Math.random() - 0.5) * 0.07;
+    this.rs = (Math.random() - 0.5) * 0.08;
     this.smashed = false;
     this.missed = false;
     this.alpha = 1;
     this.smashTime = 0;
-    // Squash/stretch for smash
     this.scaleX = 1;
     this.scaleY = 1;
+    this.glowPhase = Math.random() * 6.28;
   }
 
   Potato.prototype.update = function() {
     if (this.smashed) {
       this.smashTime++;
-      // Rapid squash then fade
       if (this.smashTime < 5) {
-        this.scaleX = 1 + this.smashTime * 0.3;
+        this.scaleX = 1 + this.smashTime * 0.35;
         this.scaleY = 1 - this.smashTime * 0.15;
       }
       this.alpha -= 0.08;
@@ -505,8 +632,14 @@ animation: smashTextPop 0.5s ease-out forwards;
     this.x += this.vx;
     this.y += this.vy;
     this.rot += this.rs;
-    if (this.y > H + this.sz * 2 && !this.isBomb) { this.missed = true; return false; }
-    if (this.y > H + 200) return false;
+    this.glowPhase += 0.1;
+
+    // Missed — fell below screen
+    if (this.y > H + this.sz * 2 && !this.isBomb) {
+      this.missed = true;
+      return false;
+    }
+    if (this.y > H + 300) return false;
     return true;
   };
 
@@ -519,7 +652,11 @@ animation: smashTextPop 0.5s ease-out forwards;
 
     if (this.isBomb && !this.smashed) {
       ctx.shadowColor = '#ff4444';
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 15 + Math.sin(this.glowPhase) * 5;
+    }
+    if (this.isGolden && !this.smashed) {
+      ctx.shadowColor = '#F1B300';
+      ctx.shadowBlur = 20 + Math.sin(this.glowPhase * 2) * 10;
     }
 
     ctx.font = this.sz + 'px serif';
@@ -532,23 +669,22 @@ animation: smashTextPop 0.5s ease-out forwards;
   Potato.prototype.hitTest = function(px, py) {
     if (this.smashed) return false;
     var dx = px - this.x, dy = py - this.y;
-    return Math.sqrt(dx * dx + dy * dy) < this.sz * 0.75;
+    return Math.sqrt(dx * dx + dy * dy) < this.sz * 0.8;
   };
 
-  // PARTICLE
+  // ===== PARTICLE =====
   function Particle(x, y, col, big) {
     this.x = x; this.y = y; this.col = col;
-    this.sz = big ? (4 + Math.random() * 6) : (2 + Math.random() * 3);
+    this.sz = big ? (4 + Math.random() * 7) : (2 + Math.random() * 3);
     var a = Math.random() * 6.28;
-    var s = big ? (4 + Math.random() * 8) : (2 + Math.random() * 5);
+    var s = big ? (5 + Math.random() * 10) : (2 + Math.random() * 5);
     this.vx = Math.cos(a) * s;
     this.vy = Math.sin(a) * s;
     this.life = 1;
-    this.decay = big ? (0.015 + Math.random() * 0.02) : (0.025 + Math.random() * 0.03);
+    this.decay = big ? (0.012 + Math.random() * 0.018) : (0.02 + Math.random() * 0.03);
   }
   Particle.prototype.update = function() {
-    this.x += this.vx; this.y += this.vy; this.vy += 0.12;
-    this.vx *= 0.98;
+    this.x += this.vx; this.y += this.vy; this.vy += 0.12; this.vx *= 0.98;
     this.life -= this.decay; return this.life > 0;
   };
   Particle.prototype.draw = function() {
@@ -556,71 +692,131 @@ animation: smashTextPop 0.5s ease-out forwards;
     ctx.beginPath(); ctx.arc(this.x, this.y, this.sz, 0, 6.28); ctx.fill(); ctx.restore();
   };
 
-  // SMASH EFFECTS
+  // ===== EFFECTS =====
   function showSmashRing(x, y, isBomb) {
     var el = document.createElement('div');
     el.className = 'smash-ring' + (isBomb ? ' bomb' : '');
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
+    el.style.left = x + 'px'; el.style.top = y + 'px';
     document.body.appendChild(el);
-    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
+    setTimeout(function() { if (el.parentNode) el.remove(); }, 400);
   }
 
-  function showSmashText(x, y) {
+  function showSmashText(x, y, text) {
     var el = document.createElement('div');
     el.className = 'smash-text';
-    el.style.left = x + 'px';
-    el.style.top = (y - 40) + 'px';
-    el.textContent = SMASH_WORDS[Math.floor(Math.random() * SMASH_WORDS.length)];
+    el.style.left = x + 'px'; el.style.top = (y - 40) + 'px';
+    el.textContent = text || SMASH_WORDS[Math.floor(Math.random() * SMASH_WORDS.length)];
     document.body.appendChild(el);
-    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+    setTimeout(function() { if (el.parentNode) el.remove(); }, 500);
   }
 
-  function popup(x, y, txt) {
+  function popup(x, y, txt, color) {
     var el = document.createElement('div');
     el.className = 'combo-popup';
     el.style.left = x + 'px'; el.style.top = y + 'px';
+    if (color) el.style.color = color;
     el.textContent = txt;
     document.body.appendChild(el);
-    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 700);
+    setTimeout(function() { if (el.parentNode) el.remove(); }, 700);
   }
 
-  function spawnSmashParticles(x, y, isBomb) {
+  function spawnSmashParticles(x, y, isBomb, isGolden) {
     if (isBomb) {
-      // Red/orange explosion
       var bcols = ['#ff4444', '#ff6600', '#ff8800', '#ffaa00', '#333'];
-      for (var b = 0; b < 20; b++) particles.push(new Particle(x, y, bcols[Math.floor(Math.random() * bcols.length)], true));
+      for (var b = 0; b < 22; b++) particles.push(new Particle(x, y, bcols[Math.floor(Math.random() * bcols.length)], true));
+    } else if (isGolden) {
+      var gcols = ['#F1B300', '#FFD700', '#FFF176', '#FFEB3B', '#fff'];
+      for (var g = 0; g < 25; g++) particles.push(new Particle(x, y, gcols[Math.floor(Math.random() * gcols.length)], true));
     } else {
-      // Gold/brown potato splat
       var cols = ['#F1B300', '#FFD54F', '#C8A84E', '#8B7355', '#FFF176', '#A7A8AA'];
       for (var i = 0; i < 18; i++) particles.push(new Particle(x, y, cols[Math.floor(Math.random() * cols.length)], true));
-      // Inner white "mash" particles
       for (var j = 0; j < 6; j++) particles.push(new Particle(x, y, '#FFFDE7', false));
     }
   }
 
-  // LAUNCH
-  function launch() {
-    var prog = gameTime / GAME_DURATION;
-    var bc = BOMB_START + (BOMB_END - BOMB_START) * prog;
-    var isBomb = Math.random() < bc;
-    var type = TYPES[Math.floor(Math.random() * TYPES.length)];
-    potatoes.push(new Potato(type, isBomb));
-    if (prog > 0.3 && Math.random() < 0.35) {
-      setTimeout(function() {
-        if (!running) return;
-        potatoes.push(new Potato(TYPES[Math.floor(Math.random() * TYPES.length)], Math.random() < bc));
-      }, 80 + Math.random() * 200);
-    }
-    if (prog > 0.6 && Math.random() < 0.25) {
-      setTimeout(function() {
-        if (!running) return;
-        potatoes.push(new Potato(TYPES[Math.floor(Math.random() * TYPES.length)], false));
-      }, 150 + Math.random() * 200);
+  // ===== STREAK / FRENZY =====
+  function updateStreak(hit) {
+    if (hit) {
+      currentStreak++;
+      if (currentStreak > bestStreak) bestStreak = currentStreak;
+
+      streakCount.textContent = currentStreak;
+
+      if (currentStreak >= 5 && currentStreak < 10) {
+        streakLabel.textContent = '🔥 STREAK';
+        streakLabel.style.color = '#FF6600';
+      } else if (currentStreak >= 10 && currentStreak < 20) {
+        streakLabel.textContent = '🔥🔥 ON FIRE';
+        streakLabel.style.color = '#ff4444';
+        if (!inFrenzy) startFrenzy();
+      } else if (currentStreak >= 20) {
+        streakLabel.textContent = '🔥🔥🔥 UNSTOPPABLE';
+        streakLabel.style.color = '#F1B300';
+      } else {
+        streakLabel.textContent = 'STREAK';
+        streakLabel.style.color = '#F1B300';
+      }
+
+      if (currentStreak >= 3) {
+        streakBar.classList.add('active');
+      }
+    } else {
+      currentStreak = 0;
+      streakBar.classList.remove('active');
+      if (inFrenzy) endFrenzy();
     }
   }
 
-  // CHECK SMASH
+  function startFrenzy() {
+    inFrenzy = true;
+    frenzyFlash.classList.add('active');
+  }
+
+  function endFrenzy() {
+    inFrenzy = false;
+    frenzyFlash.classList.remove('active');
+  }
+
+  // ===== LAUNCH =====
+  function launch() {
+    var prog = gameTime / GAME_DURATION;
+    var bc = getBombChance(prog);
+    var speedMult = getSpeedMultiplier(prog);
+    var isBomb = Math.random() < bc;
+
+    // Rare golden potato (3% chance, never a bomb)
+    var isGolden = !isBomb && Math.random() < 0.03;
+
+    var type = TYPES[Math.floor(Math.random() * TYPES.length)];
+    potatoes.push(new Potato(type, isBomb, isGolden, speedMult));
+
+    // Multi-launch
+    if (Math.random() < getMultiLaunchChance(prog)) {
+      setTimeout(function() {
+        if (!running) return;
+        var isBomb2 = Math.random() < bc;
+        potatoes.push(new Potato(TYPES[Math.floor(Math.random() * TYPES.length)], isBomb2, false, speedMult));
+      }, 60 + Math.random() * 150);
+    }
+
+    // Triple launch at higher difficulty
+    if (Math.random() < getTripleLaunchChance(prog)) {
+      setTimeout(function() {
+        if (!running) return;
+        potatoes.push(new Potato(TYPES[Math.floor(Math.random() * TYPES.length)], false, false, speedMult));
+      }, 120 + Math.random() * 200);
+    }
+
+    // Quad launch in last 15 seconds
+    if (prog > 0.75 && Math.random() < 0.2) {
+      setTimeout(function() {
+        if (!running) return;
+        potatoes.push(new Potato(TYPES[Math.floor(Math.random() * TYPES.length)], Math.random() < bc * 0.5, false, speedMult));
+      }, 180 + Math.random() * 150);
+    }
+  }
+
+  // ===== CHECK SMASH =====
   function checkSmash(px, py) {
     if (!running) return;
     var now = performance.now();
@@ -631,27 +827,54 @@ animation: smashTextPop 0.5s ease-out forwards;
         p.smashed = true;
 
         if (p.isBomb) {
-          // Hit a bomb — lose a life
           lives--;
           updateLives();
-          spawnSmashParticles(p.x, p.y, true);
+          spawnSmashParticles(p.x, p.y, true, false);
           showSmashRing(p.x, p.y, true);
-          popup(px, py - 30, '💥 -1');
+          popup(px, py - 30, '💥 -1', '#ff4444');
           comboCount = 0;
+          updateStreak(false);
           if (lives <= 0) endGame();
         } else {
-          // Good smash!
+          totalSmashed++;
           comboCount = (now - lastSmash < COMBO_WINDOW) ? comboCount + 1 : 1;
           lastSmash = now;
+
           var pts = p.type.pts;
-          if (comboCount >= 3) pts = comboCount * 2;
+
+          // Combo multiplier
+          if (comboCount >= 5) {
+            pts = pts * 4;
+          } else if (comboCount >= 3) {
+            pts = pts * 2 + comboCount;
+          }
+
+          // Streak bonus
+          if (currentStreak >= 10) pts = Math.ceil(pts * 1.5);
+
+          // Frenzy bonus
+          if (inFrenzy) pts = Math.ceil(pts * 1.25);
+
           score += pts;
           scoreEl.textContent = score;
+          updateStreak(true);
 
-          spawnSmashParticles(p.x, p.y, false);
+          spawnSmashParticles(p.x, p.y, false, p.isGolden);
           showSmashRing(p.x, p.y, false);
-          showSmashText(p.x, p.y);
-          popup(px, py - 25, comboCount >= 3 ? comboCount + 'x +' + pts : '+' + pts);
+
+          if (p.isGolden) {
+            showSmashText(p.x, p.y, '⭐ GOLDEN! ⭐');
+            popup(px, py - 25, '+' + pts, '#FFD700');
+          } else if (comboCount >= 5) {
+            showSmashText(p.x, p.y, comboCount + 'x MEGA!');
+            popup(px, py - 25, '+' + pts, '#ff6600');
+          } else if (comboCount >= 3) {
+            showSmashText(p.x, p.y);
+            popup(px, py - 25, comboCount + 'x +' + pts);
+          } else {
+            showSmashText(p.x, p.y);
+            popup(px, py - 25, '+' + pts);
+          }
         }
         break;
       }
@@ -659,37 +882,38 @@ animation: smashTextPop 0.5s ease-out forwards;
   }
 
   function updateLives() {
-    var full = '🥔', empty = '💔';
-    livesEl.textContent = full.repeat(Math.max(0, lives)) + empty.repeat(MAX_LIVES - Math.max(0, lives));
+    livesEl.textContent = '🥔'.repeat(Math.max(0, lives)) + '💔'.repeat(MAX_LIVES - Math.max(0, lives));
   }
 
-  // DRAW BACKGROUND
+  // ===== DRAW =====
   function drawBG() {
     var bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, '#1D1D1D'); bg.addColorStop(1, '#2A2A2A');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
-    // Subtle grid
-    ctx.strokeStyle = 'rgba(241,179,0,0.025)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(241,179,0,0.02)'; ctx.lineWidth = 1;
     for (var gx = 0; gx < W; gx += 36) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
     for (var gy = 0; gy < H; gy += 36) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+
+    // Frenzy background effect
+    if (inFrenzy) {
+      ctx.fillStyle = 'rgba(241,179,0,0.02)';
+      ctx.fillRect(0, 0, W, H);
+    }
   }
 
-  // DRAW TRAIL (finger/mouse path)
   function drawTrail() {
     if (pointerTrail.length < 2) return;
     var now = performance.now();
-    // Remove old points
     pointerTrail = pointerTrail.filter(function(p) { return now - p.t < 100; });
     if (pointerTrail.length < 2) return;
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(241,179,0,0.5)';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.shadowColor = '#F1B300';
-    ctx.shadowBlur = 8;
+    ctx.strokeStyle = inFrenzy ? 'rgba(255,100,0,0.6)' : 'rgba(241,179,0,0.5)';
+    ctx.lineWidth = inFrenzy ? 6 : 4;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.shadowColor = inFrenzy ? '#ff6600' : '#F1B300';
+    ctx.shadowBlur = inFrenzy ? 12 : 8;
     ctx.beginPath();
     ctx.moveTo(pointerTrail[0].x, pointerTrail[0].y);
     for (var i = 1; i < pointerTrail.length; i++) {
@@ -699,22 +923,33 @@ animation: smashTextPop 0.5s ease-out forwards;
     ctx.restore();
   }
 
-  // GAME LOOP
+  // ===== GAME LOOP =====
   function loop(ts) {
     if (!running) return;
     lastFrame = ts;
     gameTime = (ts - startTime) / 1000;
     if (gameTime >= GAME_DURATION) { endGame(); return; }
 
-    timeEl.textContent = Math.max(0, Math.ceil(GAME_DURATION - gameTime));
+    var secsLeft = Math.max(0, Math.ceil(GAME_DURATION - gameTime));
+    timeEl.textContent = secsLeft;
+
+    // Flash time when low
+    if (secsLeft <= 10) {
+      timeEl.style.color = secsLeft % 2 === 0 ? '#ff4444' : '#F1B300';
+    } else {
+      timeEl.style.color = '#F1B300';
+    }
 
     var prog = gameTime / GAME_DURATION;
-    var interval = LAUNCH_MAX - (LAUNCH_MAX - LAUNCH_MIN) * prog;
+    var interval = getLaunchInterval(prog);
     if (ts - lastLaunch > interval) { launch(); lastLaunch = ts; }
 
     potatoes = potatoes.filter(function(p) {
       var alive = p.update();
-      if (!alive && p.missed) { lives--; updateLives(); if (lives <= 0) endGame(); }
+      if (!alive && p.missed) {
+        lives--; updateLives(); updateStreak(false);
+        if (lives <= 0) endGame();
+      }
       return alive;
     });
     particles = particles.filter(function(p) { return p.update(); });
@@ -724,8 +959,8 @@ animation: smashTextPop 0.5s ease-out forwards;
 
     // Time bar
     var tl = Math.max(0, 1 - gameTime / GAME_DURATION);
-    ctx.fillStyle = 'rgba(241,179,0,0.12)'; ctx.fillRect(0, H - 5, W, 5);
-    ctx.fillStyle = tl > 0.2 ? '#F1B300' : '#ff4444'; ctx.fillRect(0, H - 5, W * tl, 5);
+    ctx.fillStyle = 'rgba(241,179,0,0.1)'; ctx.fillRect(0, H - 5, W, 5);
+    ctx.fillStyle = tl > 0.15 ? '#F1B300' : '#ff4444'; ctx.fillRect(0, H - 5, W * tl, 5);
 
     for (var pi = 0; pi < potatoes.length; pi++) potatoes[pi].draw();
     for (var qi = 0; qi < particles.length; qi++) particles[qi].draw();
@@ -734,19 +969,24 @@ animation: smashTextPop 0.5s ease-out forwards;
     raf = requestAnimationFrame(loop);
   }
 
-  // START
+  // ===== START =====
   function startGame() {
     score = 0; lives = MAX_LIVES; gameTime = 0;
     potatoes = []; particles = []; pointerTrail = [];
     comboCount = 0; lastSmash = 0; pointerDown = false;
+    totalSmashed = 0; bestStreak = 0; currentStreak = 0;
+    inFrenzy = false;
     scoreEl.textContent = '0';
     timeEl.textContent = GAME_DURATION;
+    timeEl.style.color = '#F1B300';
     updateLives();
 
     startScreen.classList.add('hidden');
     startScreen.style.zIndex = '-1';
     endScreen.classList.add('hidden');
     endScreen.style.zIndex = '-1';
+    streakBar.classList.remove('active');
+    frenzyFlash.classList.remove('active');
     gameContainer.classList.add('active');
     hudEl.classList.add('active');
 
@@ -758,19 +998,22 @@ animation: smashTextPop 0.5s ease-out forwards;
     raf = requestAnimationFrame(loop);
   }
 
-  // END
+  // ===== END =====
   function endGame() {
     if (!running) return;
     running = false;
     cancelAnimationFrame(raf);
     gameContainer.classList.remove('active');
     hudEl.classList.remove('active');
+    streakBar.classList.remove('active');
+    frenzyFlash.classList.remove('active');
 
     var nr = score > highScore;
-    if (nr) { highScore = score; try { localStorage.setItem('spudHS2', highScore.toString()); } catch(e) {} }
+    if (nr) { highScore = score; try { localStorage.setItem('spudHS3', highScore.toString()); } catch(e) {} }
 
     finalEl.textContent = score;
     highEl.textContent = highScore;
+    endStatsEl.textContent = totalSmashed + ' smashed · Best streak: ' + bestStreak;
     if (nr && score > 0) { newRecEl.classList.remove('hidden'); } else { newRecEl.classList.add('hidden'); }
 
     var m = MSGS[0].m;
@@ -783,7 +1026,7 @@ animation: smashTextPop 0.5s ease-out forwards;
     }, 400);
   }
 
-  // INPUT
+  // ===== INPUT =====
   function getXY(e) {
     if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
     if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -791,24 +1034,21 @@ animation: smashTextPop 0.5s ease-out forwards;
   }
 
   function onDown(e) {
-    e.preventDefault();
-    pointerDown = true;
+    e.preventDefault(); pointerDown = true;
     var p = getXY(e);
     pointerTrail = [{ x: p.x, y: p.y, t: performance.now() }];
     checkSmash(p.x, p.y);
   }
 
   function onMove(e) {
-    e.preventDefault();
-    if (!pointerDown) return;
+    e.preventDefault(); if (!pointerDown) return;
     var p = getXY(e);
     pointerTrail.push({ x: p.x, y: p.y, t: performance.now() });
     checkSmash(p.x, p.y);
   }
 
   function onUp(e) {
-    e.preventDefault();
-    pointerDown = false;
+    e.preventDefault(); pointerDown = false;
     setTimeout(function() { pointerTrail = []; }, 120);
   }
 
@@ -821,16 +1061,12 @@ animation: smashTextPop 0.5s ease-out forwards;
   gameContainer.addEventListener('touchend', onUp, { passive: false });
   gameContainer.addEventListener('touchcancel', onUp, { passive: false });
 
-  // BUTTONS
   document.getElementById('start-btn').onclick = function(e) { e.preventDefault(); e.stopPropagation(); startGame(); };
   document.getElementById('restart-btn').onclick = function(e) { e.preventDefault(); e.stopPropagation(); startGame(); };
 
-  // Prevent scroll/zoom on mobile
   document.addEventListener('touchmove', function(e) { if (running) e.preventDefault(); }, { passive: false });
   var lt = 0;
-  document.addEventListener('touchend', function(e) {
-    var n = Date.now(); if (n - lt < 300) e.preventDefault(); lt = n;
-  }, { passive: false });
+  document.addEventListener('touchend', function(e) { var n = Date.now(); if (n - lt < 300) e.preventDefault(); lt = n; }, { passive: false });
 
 })();
 </script>

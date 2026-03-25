@@ -567,43 +567,45 @@ animation: smashTextPop 0.5s ease-out forwards;
     }
     this.sz = sz;
 
-    // Launch zones: mostly bottom with varied heights
-    // Height distribution: 60% middle, 20% low, 15% high, 5% sides
+    // Launch zones: optimized for standing play on tall vertical touch displays
+    // Peak zone should be 25%-50% from top (chest/arm height for standing person)
+    // Screen is very tall portrait, so launches need serious upward power
+    var heightFactor = Math.max(1, H / 600); // Tall screens get much stronger launches
     var launchZone = Math.random();
     if (launchZone < 0.05) {
       // From left side (rare)
       this.x = -sz;
-      this.y = H * (0.35 + Math.random() * 0.3);
+      this.y = H * (0.2 + Math.random() * 0.2);
       var spd = (5 + Math.random() * 3) * speedMult;
       this.vx = spd * 0.8;
-      this.vy = -(spd * 0.3 + Math.random() * 2);
+      this.vy = -(spd * 0.15 + Math.random());
     } else if (launchZone < 0.10) {
       // From right side (rare)
       this.x = W + sz;
-      this.y = H * (0.35 + Math.random() * 0.3);
+      this.y = H * (0.2 + Math.random() * 0.2);
       var spd2 = (5 + Math.random() * 3) * speedMult;
       this.vx = -(spd2 * 0.8);
-      this.vy = -(spd2 * 0.3 + Math.random() * 2);
+      this.vy = -(spd2 * 0.15 + Math.random());
     } else {
-      // From bottom — varied peak heights
+      // From bottom — biased toward chest height on tall display
       this.x = Math.random() * (W - sz * 2) + sz;
       this.y = H + sz;
-      var ang3 = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
-      this.vx = Math.cos(ang3) * 3 * speedMult;
+      var ang3 = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+      this.vx = Math.cos(ang3) * 2.5 * speedMult;
 
       var heightRoll = Math.random();
-      if (heightRoll < 0.20) {
-        // Low launch — peaks in bottom third (easy targets)
-        this.vy = -(5 + Math.random() * 2) * speedMult;
-      } else if (heightRoll < 0.80) {
-        // Middle launch — peaks around center of screen (sweet spot)
-        this.vy = -(7 + Math.random() * 2.5) * speedMult;
-      } else if (heightRoll < 0.95) {
-        // High launch — peaks in upper third (challenging)
-        this.vy = -(9 + Math.random() * 2) * speedMult;
+      if (heightRoll < 0.10) {
+        // Low-ish — peaks around 55-65% from top (waist height, 10%)
+        this.vy = -(9 + Math.random() * 2) * speedMult * heightFactor;
+      } else if (heightRoll < 0.70) {
+        // Chest height sweet spot — peaks around 30-45% from top (60%)
+        this.vy = -(11.5 + Math.random() * 3) * speedMult * heightFactor;
+      } else if (heightRoll < 0.90) {
+        // High — peaks around 15-30% from top (20%)
+        this.vy = -(14 + Math.random() * 2) * speedMult * heightFactor;
       } else {
-        // Very high — near top of screen (rare, difficulty spice)
-        this.vy = -(10.5 + Math.random() * 2) * speedMult;
+        // Very high — near top (10%)
+        this.vy = -(15.5 + Math.random() * 2) * speedMult * heightFactor;
       }
     }
 

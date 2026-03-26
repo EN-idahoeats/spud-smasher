@@ -453,13 +453,13 @@ animation: smashTextPop 0.5s ease-out forwards;
   // ===== CONFIG =====
   var GAME_DURATION = 60;
   var MAX_LIVES = 3;
-  var GRAVITY = 0.15;
+  var GRAVITY = 0.22;
   var COMBO_WINDOW = 600;
 
   // Difficulty ramps over time (0-1 progress)
   function getLaunchInterval(prog) {
-    // Starts at 1100ms, drops to 300ms
-    return Math.max(300, 1100 - prog * 800);
+    // Starts at 1200ms, drops to 500ms (was 300 — too hectic)
+    return Math.max(500, 1200 - prog * 700);
   }
   function getBombChance(prog) {
     // 8% -> 30%
@@ -474,8 +474,8 @@ animation: smashTextPop 0.5s ease-out forwards;
     return Math.max(0, (prog - 0.3) * 0.5);
   }
   function getSpeedMultiplier(prog) {
-    // 1.0 -> 1.6
-    return 1.0 + prog * 0.6;
+    // 1.0 -> 1.25 (gentler ramp — difficulty comes from frequency, not speed)
+    return 1.0 + prog * 0.25;
   }
 
   var TYPES = [
@@ -590,8 +590,8 @@ animation: smashTextPop 0.5s ease-out forwards;
       // From bottom — biased toward chest height on tall display
       this.x = Math.random() * (W - sz * 2) + sz;
       this.y = H + sz;
-      var ang3 = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
-      this.vx = Math.cos(ang3) * 2.5 * speedMult;
+      var ang3 = -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+      this.vx = Math.cos(ang3) * 1.8 * speedMult;
 
       var heightRoll = Math.random();
       if (heightRoll < 0.10) {

@@ -453,7 +453,7 @@ animation: smashTextPop 0.5s ease-out forwards;
   // ===== CONFIG =====
   var GAME_DURATION = 60;
   var MAX_LIVES = 3;
-  var GRAVITY = 0.15;
+  var GRAVITY = 0.075;
   var COMBO_WINDOW = 600;
 
   // Difficulty ramps over time (0-1 progress)
@@ -571,7 +571,7 @@ animation: smashTextPop 0.5s ease-out forwards;
     // Peak zone should be 25%-50% from top (chest/arm height for standing person)
     // Screen is very tall portrait, so launches need serious upward power
     var heightFactor = Math.max(1, H / 600); // Tall screens get much stronger launches
-    var slow = 0.67; // Global speed scale — slows everything 33%
+    var slow = 0.335; // Global speed scale
     var launchZone = Math.random();
     if (launchZone < 0.05) {
       // From left side (rare)

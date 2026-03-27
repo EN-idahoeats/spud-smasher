@@ -453,7 +453,7 @@ animation: smashTextPop 0.5s ease-out forwards;
   // ===== CONFIG =====
   var GAME_DURATION = 60;
   var MAX_LIVES = 3;
-  var GRAVITY = 0.22;
+  var GRAVITY = 0.15;
   var COMBO_WINDOW = 600;
 
   // Difficulty ramps over time (0-1 progress)
@@ -571,19 +571,20 @@ animation: smashTextPop 0.5s ease-out forwards;
     // Peak zone should be 25%-50% from top (chest/arm height for standing person)
     // Screen is very tall portrait, so launches need serious upward power
     var heightFactor = Math.max(1, H / 600); // Tall screens get much stronger launches
+    var slow = 0.67; // Global speed scale — slows everything 33%
     var launchZone = Math.random();
     if (launchZone < 0.05) {
       // From left side (rare)
       this.x = -sz;
       this.y = H * (0.2 + Math.random() * 0.2);
-      var spd = (5 + Math.random() * 3) * speedMult;
+      var spd = (5 + Math.random() * 3) * speedMult * slow;
       this.vx = spd * 0.8;
       this.vy = -(spd * 0.15 + Math.random());
     } else if (launchZone < 0.10) {
       // From right side (rare)
       this.x = W + sz;
       this.y = H * (0.2 + Math.random() * 0.2);
-      var spd2 = (5 + Math.random() * 3) * speedMult;
+      var spd2 = (5 + Math.random() * 3) * speedMult * slow;
       this.vx = -(spd2 * 0.8);
       this.vy = -(spd2 * 0.15 + Math.random());
     } else {
@@ -591,21 +592,21 @@ animation: smashTextPop 0.5s ease-out forwards;
       this.x = Math.random() * (W - sz * 2) + sz;
       this.y = H + sz;
       var ang3 = -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-      this.vx = Math.cos(ang3) * 1.8 * speedMult;
+      this.vx = Math.cos(ang3) * 1.8 * speedMult * slow;
 
       var heightRoll = Math.random();
       if (heightRoll < 0.10) {
         // Low-ish — peaks around 55-65% from top (waist height, 10%)
-        this.vy = -(9 + Math.random() * 2) * speedMult * heightFactor;
+        this.vy = -(9 + Math.random() * 2) * speedMult * heightFactor * slow;
       } else if (heightRoll < 0.70) {
         // Chest height sweet spot — peaks around 30-45% from top (60%)
-        this.vy = -(11.5 + Math.random() * 3) * speedMult * heightFactor;
+        this.vy = -(11.5 + Math.random() * 3) * speedMult * heightFactor * slow;
       } else if (heightRoll < 0.90) {
         // High — peaks around 15-30% from top (20%)
-        this.vy = -(14 + Math.random() * 2) * speedMult * heightFactor;
+        this.vy = -(14 + Math.random() * 2) * speedMult * heightFactor * slow;
       } else {
         // Very high — near top (10%)
-        this.vy = -(15.5 + Math.random() * 2) * speedMult * heightFactor;
+        this.vy = -(15.5 + Math.random() * 2) * speedMult * heightFactor * slow;
       }
     }
 
